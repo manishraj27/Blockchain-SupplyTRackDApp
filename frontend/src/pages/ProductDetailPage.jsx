@@ -11,7 +11,7 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { updateProductStatus, getProductFromBlockchain } from '../utils/web3';
+import { updateProductStatus, getProductFromBlockchain } from '../services/web3';
 
 // Mock API URL - replace with actual API URL in production
 const API_URL = 'http://localhost:5000/api';

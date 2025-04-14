@@ -165,9 +165,9 @@ export default function AppLayout({ children }) {
   const CardTitle = ({ children }) => <h3 className="text-lg font-medium">{children}</h3>;
   
   // Import our page components we created earlier
-  const ProductDashboard = () => <div>Product Dashboard Page</div>;
-  const ProductDetailPage = () => <div>Product Detail Page</div>;
-  const QRScannerPage = () => <div>QR Scanner Page</div>;
+  const ProductDashboard = () => <ProductDashboard />;
+  const ProductDetailPage = () => <ProductDetailPage />;
+  const QRScannerPage = () => <QRScannerPage />;
   
   return (
     <div className="flex min-h-screen bg-gray-50">

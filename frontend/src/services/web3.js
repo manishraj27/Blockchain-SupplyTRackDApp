@@ -46,35 +46,17 @@ export const createProduct = async (productData) => {
     const receipt = await tx.wait();
     console.log('Transaction mined:', receipt);
     
-    // Instead of calling productCount(), parse the event logs to get the product ID
-    const event = receipt.logs.find(log => 
-      log.topics[0] === ethers.id("ProductCreated(uint256,string,address,uint256)")
-    );
-    
-    if (!event) {
-      throw new Error('ProductCreated event not found in transaction logs');
-    }
-    
-    const decoded = contract.interface.decodeEventLog(
-      "ProductCreated(uint256,string,address,uint256)",
-      event.data,
-      event.topics
-    );
-    
-    const productId = decoded.productId.toString();
-    
+    // Just return transaction details without product ID
     return { 
       success: true, 
       txHash: receipt.hash,
-      blockNumber: receipt.blockNumber,
-      productId: productId
+      blockNumber: receipt.blockNumber
     };
   } catch (error) {
     console.error('Error creating product on blockchain:', error);
     throw new Error(`Blockchain transaction failed: ${error.message}`);
   }
 };
-
 // Helper function to update product status via the smart contract
 export const updateProductStatus = async (productId, newStatus) => {
   try {
