@@ -4,7 +4,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "compile": "node scripts/compile.js",
+    "deploy": "node scripts/deploy.js"
   },
   "dependencies": {
     "@truffle/hdwallet-provider": "^2.1.15",
