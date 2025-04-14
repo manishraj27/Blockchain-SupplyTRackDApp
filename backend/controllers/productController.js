@@ -6,11 +6,19 @@ const productController = {
         try {
             console.log('Received product data:', req.body);
             
+            // Check if blockchain transaction was already performed
+            if (!req.body.blockchainId || !req.body.blockchainTxHash) {
+                return res.status(400).json({ 
+                    message: 'Missing blockchain transaction details'
+                });
+            }
+            
+            // Create product in database using the blockchain data from frontend
             const product = new Product({
                 name: req.body.name,
                 description: req.body.description,
                 status: 'Created',
-                blockchainId: req.body.blockchainId || 1, // Default to 1 if not provided
+                blockchainId: req.body.blockchainId,
                 blockchainTxHash: req.body.blockchainTxHash,
                 manufacturer: req.body.manufacturer
             });
@@ -45,11 +53,28 @@ const productController = {
         try {
             const { id } = req.params;
             const { status } = req.body;
+            
+            // Convert string status to numeric value for the blockchain
+            const statusMap = {
+                'Created': 0,
+                'InTransit': 1,
+                'Delivered': 2
+            };
+
+            const numericStatus = statusMap[status];
+            if (numericStatus === undefined) {
+                return res.status(400).json({ message: 'Invalid status. Must be Created, InTransit, or Delivered' });
+            }
+
+            const product = await Product.findById(id);
+            if (!product) {
+                return res.status(404).json({ message: 'Product not found' });
+            }
 
             // Update status in blockchain
             const tx = await contract.methods.updateProductStatus(
-                id,
-                status
+                product.blockchainId,
+                numericStatus
             ).send({ from: account });
 
             // Update in database
@@ -62,10 +87,6 @@ const productController = {
                 },
                 { new: true }
             );
-
-            if (!updatedProduct) {
-                return res.status(404).json({ message: 'Product not found' });
-            }
 
             res.json(updatedProduct);
         } catch (error) {
@@ -87,16 +108,42 @@ const productController = {
             }
 
             // Get blockchain history
-            const events = await contract.getPastEvents('StatusUpdated', {
-                filter: { productId: id },
+            const statusEvents = await contract.getPastEvents('StatusUpdated', {
+                filter: { productId: product.blockchainId },
                 fromBlock: 0
             });
 
-            const history = events.map(event => ({
-                status: event.returnValues.status,
-                timestamp: new Date(event.returnValues.timestamp * 1000),
+            const creationEvents = await contract.getPastEvents('ProductCreated', {
+                filter: { productId: product.blockchainId },
+                fromBlock: 0
+            });
+            
+            const statusMap = {
+                0: 'Created',
+                1: 'InTransit',
+                2: 'Delivered'
+            };
+            
+            // Process status update events
+            const statusHistory = statusEvents.map(event => ({
+                status: statusMap[event.returnValues.status],
+                timestamp: new Date(parseInt(event.returnValues.timestamp) * 1000),
                 transactionHash: event.transactionHash
             }));
+            
+            // Process creation event
+            let history = [];
+            if (creationEvents.length > 0) {
+                const creationEvent = creationEvents[0];
+                history.push({
+                    status: 'Created',
+                    timestamp: new Date(parseInt(creationEvent.returnValues.timestamp) * 1000),
+                    transactionHash: creationEvent.transactionHash
+                });
+            }
+            
+            // Combine and sort by timestamp
+            history = [...history, ...statusHistory].sort((a, b) => a.timestamp - b.timestamp);
 
             res.json({
                 product,
@@ -125,11 +172,21 @@ const productController = {
             }
 
             // Get blockchain data
-            const blockchainProduct = await contract.methods.getProduct(id).call();
+            const blockchainProduct = await contract.methods.getProduct(product.blockchainId).call();
+            
+            // Convert numeric status to string
+            const statusMap = {
+                0: 'Created',
+                1: 'InTransit',
+                2: 'Delivered'
+            };
 
             res.json({
                 ...product.toObject(),
-                blockchainData: blockchainProduct
+                blockchainData: {
+                    ...blockchainProduct,
+                    status: statusMap[blockchainProduct.status]
+                }
             });
         } catch (error) {
             console.error('Error fetching product:', error);
@@ -143,17 +200,18 @@ const productController = {
     deleteProduct: async (req, res) => {
         try {
             const { id } = req.params;
+            const product = await Product.findById(id);
+            
+            if (!product) {
+                return res.status(404).json({ message: 'Product not found' });
+            }
             
             // Delete from blockchain
-            await contract.methods.deleteProduct(id).send({ from: account });
+            await contract.methods.deleteProduct(product.blockchainId).send({ from: account });
             
             // Delete from database
             const deletedProduct = await Product.findByIdAndDelete(id);
             
-            if (!deletedProduct) {
-                return res.status(404).json({ message: 'Product not found' });
-            }
-
             res.json({ message: 'Product deleted successfully' });
         } catch (error) {
             console.error('Error deleting product:', error);

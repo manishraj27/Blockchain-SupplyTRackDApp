@@ -6,7 +6,7 @@ const solc = require('solc');
 const contractPath = path.resolve(__dirname, '../contracts/SupplyChain.sol');
 const source = fs.readFileSync(contractPath, 'utf8');
 
-// Create the input object for the compiler
+// Create the input object for the compiler with specific compiler version
 const input = {
     language: 'Solidity',
     sources: {
@@ -19,12 +19,30 @@ const input = {
             '*': {
                 '*': ['*']
             }
+        },
+        optimizer: {
+            enabled: true,
+            runs: 200
         }
     }
 };
 
 // Compile the contract
+console.log('Compiling contract...');
 const output = JSON.parse(solc.compile(JSON.stringify(input)));
+
+// Check for errors
+if (output.errors) {
+    output.errors.forEach(error => {
+        console.log(error.formattedMessage);
+    });
+}
+
+// Check if there were any compilation errors that should stop the process
+if (output.errors && output.errors.some(error => error.severity === 'error')) {
+    console.error('Compilation failed!');
+    process.exit(1);
+}
 
 // Export the compiled contract
 const contract = output.contracts['SupplyChain.sol']['SupplyChain'];
