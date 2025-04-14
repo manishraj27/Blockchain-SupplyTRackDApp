@@ -1,0 +1,24 @@
+{
+  "name": "term_paper_project-backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "@truffle/hdwallet-provider": "^2.1.15",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.5",
+    "express": "^4.21.1",
+    "express-validator": "^7.2.1",
+    "helmet": "^8.1.0",
+    "mongoose": "^8.13.2",
+    "solc": "^0.8.29",
+    "web3": "^4.16.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  }
+}
