@@ -8,13 +8,13 @@ import ProductDetailPage from './pages/ProductDetailPage';
 
 export default function App() {
   return (
-      <AppLayout>
-        <ProductDashboard />
-    <Routes>
+    <AppLayout>
+      <ProductDashboard />
+      <Routes>
 
         <Route path="/products/:id" element={<ProductDetailPage />} />
-    </Routes>
-      </AppLayout>
+      </Routes>
+    </AppLayout>
 
 
   );
