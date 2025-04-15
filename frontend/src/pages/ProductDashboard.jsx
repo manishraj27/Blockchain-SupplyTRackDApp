@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Filter, Search, MoreVertical, Check, Truck, Package } from 'lucide-react';
+import { Plus, Filter, Search, MoreVertical, Check, Truck, Package, ArrowUpDown } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,6 +51,8 @@ export default function ProductDashboard() {
   const [isCreating, setIsCreating] = useState(false);
   const [txStatus, setTxStatus] = useState(null);
   const [walletConnected, setWalletConnected] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   
   // Setup form with react-hook-form
   const form = useForm({
@@ -113,7 +115,6 @@ export default function ProductDashboard() {
     }
   };
   
-
   const handleCreateProduct = async (values) => {
     if (!walletConnected) {
       setError("Please connect your wallet first");
@@ -173,7 +174,6 @@ export default function ProductDashboard() {
       setIsCreating(false);
     }
   };
-
 
   const handleUpdateStatus = async (product, newStatus) => {
     if (!walletConnected) {
@@ -238,119 +238,124 @@ export default function ProductDashboard() {
         return <Badge variant="outline">Unknown</Badge>;
     }
   };
+
+  // Filter products based on search query and status filter
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          product.manufacturer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          product.productId?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || product.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
   
   if (loading) {
     return (
-      <div className="container mx-auto py-8 flex justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      <div className="flex h-[calc(100vh-64px)] items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
   
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Products</h1>
-          <p className="text-gray-500 mt-1">Manage and track your supply chain products</p>
-        </div>
-        <div className="flex space-x-2 mt-4 md:mt-0">
-          {!walletConnected && (
-            <Button onClick={connectWallet} variant="outline">
-              Connect Wallet
+    <div className="container mx-auto py-6 px-4 md:px-6">
+      <div className="flex flex-col md:flex-row justify-end items-center mb-6 gap-4">
+        {!walletConnected && (
+          <Button onClick={connectWallet} variant="outline" className="w-full md:w-auto">
+            Connect Wallet
+          </Button>
+        )}
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="w-full md:w-auto">
+              <Plus className="mr-2 h-4 w-4" /> Add Product
             </Button>
-          )}
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" /> Add Product
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>Create New Product</DialogTitle>
-                <DialogDescription>
-                  Add a new product to the blockchain-based supply chain system.
-                </DialogDescription>
-              </DialogHeader>
-              
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleCreateProduct)} className="space-y-6">
-                  <div className="grid gap-4 py-4">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Product Name</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="Enter product name" 
-                              {...field} 
-                              disabled={isCreating} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Description</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="Enter product description" 
-                              {...field} 
-                              disabled={isCreating} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="manufacturer"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Manufacturer</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="Enter manufacturer name" 
-                              {...field} 
-                              disabled={isCreating} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    {txStatus && (
-                      <Alert className="bg-blue-50 border-blue-200">
-                        <AlertDescription>{txStatus}</AlertDescription>
-                      </Alert>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Create New Product</DialogTitle>
+              <DialogDescription>
+                Add a new product to the blockchain-based supply chain system.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleCreateProduct)} className="space-y-6">
+                <div className="grid gap-4 py-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Product Name</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Enter product name" 
+                            {...field} 
+                            disabled={isCreating} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                  </div>
+                  />
                   
-                  <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)} disabled={isCreating}>
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={isCreating || !walletConnected}>
-                      {isCreating ? "Creating..." : "Create Product"}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
-        </div>
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Enter product description" 
+                            {...field} 
+                            disabled={isCreating} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="manufacturer"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Manufacturer</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Enter manufacturer name" 
+                            {...field} 
+                            disabled={isCreating} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {txStatus && (
+                    <Alert className="bg-blue-50 border-blue-200">
+                      <AlertDescription>{txStatus}</AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+                
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)} disabled={isCreating}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isCreating || !walletConnected}>
+                    {isCreating ? "Creating..." : "Create Product"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </div>
       
       {error && (
@@ -359,38 +364,54 @@ export default function ProductDashboard() {
         </Alert>
       )}
       
-      <div className="flex flex-col lg:flex-row gap-4 mb-6">
-        <div className="flex-1">
-          <Input 
-            placeholder="Search products..." 
-            prefix={<Search className="h-4 w-4 mr-2 text-gray-500" />}
-            className="w-full"
-          />
+      <div className="bg-white rounded-lg shadow-sm mb-6">
+        <div className="p-4 border-b">
+          <h2 className="text-lg font-semibold">Filters</h2>
         </div>
-        <div className="flex gap-2">
-          <Select defaultValue="all">
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Status Filter" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="created">Registered</SelectItem>
-              <SelectItem value="intransit">In Transit</SelectItem>
-              <SelectItem value="delivered">Delivered</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline" size="icon">
-            <Filter className="h-4 w-4" />
-          </Button>
+        <div className="p-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <Input 
+                placeholder="Search products..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full"
+                icon={<Search className="h-4 w-4 text-gray-500" />}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Select 
+                value={statusFilter} 
+                onValueChange={(value) => setStatusFilter(value)}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Status Filter" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="Created">Registered</SelectItem>
+                  <SelectItem value="InTransit">In Transit</SelectItem>
+                  <SelectItem value="Delivered">Delivered</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="icon">
+                <Filter className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
       
-      {products.length === 0 ? (
+      {filteredProducts.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">
             <Package className="h-12 w-12 mx-auto text-gray-400 mb-4" />
             <h3 className="text-lg font-medium mb-2">No products found</h3>
-            <p className="text-gray-500 mb-4">Get started by creating your first product on the blockchain</p>
+            <p className="text-gray-500 mb-4">
+              {products.length === 0 
+                ? "Get started by creating your first product on the blockchain" 
+                : "No products match your current filters"}
+            </p>
             <Button onClick={() => setIsCreateDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" /> Add Product
             </Button>
@@ -402,15 +423,25 @@ export default function ProductDashboard() {
             <table className="w-full">
               <thead>
                 <tr className="border-b bg-gray-50">
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manufacturer</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="flex items-center">
+                      Product
+                      <ArrowUpDown className="ml-1 h-3 w-3" />
+                    </div>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <div className="flex items-center">
+                      Manufacturer
+                      <ArrowUpDown className="ml-1 h-3 w-3" />
+                    </div>
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Blockchain</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {products.map((product) => (
+                {filteredProducts.map((product) => (
                   <tr key={product._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -490,7 +521,7 @@ export default function ProductDashboard() {
           
           <div className="bg-gray-50 px-6 py-3 border-t flex items-center justify-between">
             <div className="text-sm text-gray-500">
-              Showing <span className="font-medium">{products.length}</span> products
+              Showing <span className="font-medium">{filteredProducts.length}</span> of <span className="font-medium">{products.length}</span> products
             </div>
             <div className="flex space-x-2">
               <Button variant="outline" size="sm" disabled>Previous</Button>
