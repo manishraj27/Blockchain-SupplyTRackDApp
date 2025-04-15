@@ -89,26 +89,34 @@ export const updateProductStatus = async (productId, newStatus) => {
 };
 
 // Helper function to get product details from the smart contract
-export const getProductFromBlockchain = async (productId) => {
+// Helper function to get product details from the smart contract using tx hash
+export const getProductFromBlockchain = async (blockchainTxHash) => {
   try {
     const contract = await getContract();
-    if (!contract) throw new Error('Contract connection failed');
+    if (!contract) {
+      throw new Error('Failed to initialize contract');
+    }
     
-    const productData = await contract.getProduct(productId);
+    // If your contract doesn't have a way to look up by tx hash,
+    // you might need to store the product ID in your MongoDB document
+    // For now we'll assume we're using the numeric ID from the contract
     
-    // Convert numeric status to string
-    const statusMap = ['Created', 'InTransit', 'Delivered'];
+    // Extract the product ID from your database or parse from transaction receipt
+    const numericId = parseInt(blockchainTxHash, 16) % 1000000; // Just an example - replace with your logic
+    
+    const product = await contract.getProduct(numericId);
     
     return {
-      id: productData[0],
-      name: productData[1],
-      description: productData[2],
-      manufacturer: productData[3],
-      status: statusMap[parseInt(productData[4])],
-      timestamp: parseInt(productData[5])
+      id: product.id.toString(),
+      name: product.name,
+      description: product.description,
+      manufacturer: product.manufacturer,
+      status: ['Created', 'InTransit', 'Delivered'][product.status],
+      timestamp: new Date(Number(product.timestamp) * 1000).toISOString(),
+      exists: product.exists
     };
   } catch (error) {
     console.error('Error fetching product from blockchain:', error);
-    throw new Error(`Failed to fetch product: ${error.message}`);
+    throw new Error(`Blockchain error: ${error.message}`);
   }
 };

@@ -163,38 +163,54 @@ const productController = {
 
     getProductById: async (req, res) => {
         try {
-            const { id } = req.params;
-            const product = await Product.findById(id);
-            
-            if (!product) {
-                return res.status(404).json({ message: 'Product not found' });
-            }
-
-            // Get blockchain data
-            const blockchainProduct = await contract.methods.getProduct(product.blockchainId).call();
-            
-            // Convert numeric status to string
-            const statusMap = {
-                0: 'Created',
-                1: 'InTransit',
-                2: 'Delivered'
-            };
-
-            res.json({
-                ...product.toObject(),
-                blockchainData: {
-                    ...blockchainProduct,
-                    status: statusMap[blockchainProduct.status]
-                }
-            });
+          // Log the requested ID for debugging
+          console.log('Fetching product with ID:', req.params.id);
+          
+          // Find the product by MongoDB _id
+          const product = await Product.findById(req.params.id);
+          
+          // If no product is found, return 404
+          if (!product) {
+            console.log(`Product with ID ${req.params.id} not found`);
+            return res.status(404).json({ message: 'Product not found' });
+          }
+          
+          // Format the response
+          const formattedProduct = {
+            _id: product._id,
+            name: product.name,
+            description: product.description,
+            status: product.status,
+            blockchainTxHash: product.blockchainTxHash,
+            manufacturer: product.manufacturer,
+            createdAt: product.createdAt,
+            updatedAt: product.updatedAt,
+            // Add additional formatted data if needed
+            isVerifiedOnBlockchain: !!product.blockchainTxHash,
+            createdDateFormatted: new Date(product.createdAt).toLocaleString()
+          };
+          
+          console.log(`Successfully retrieved product: ${product.name}`);
+          res.json(formattedProduct);
+          
         } catch (error) {
-            console.error('Error fetching product:', error);
-            res.status(500).json({ 
-                message: 'Error fetching product',
-                error: error.message 
+          console.error('Error fetching product by ID:', error);
+          
+          // Check if error is due to invalid ObjectId format
+          if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            console.error(`Invalid ObjectId format: ${req.params.id}`);
+            return res.status(400).json({ 
+              message: 'Invalid product ID format',
+              error: error.message 
             });
+          }
+          
+          res.status(500).json({ 
+            message: 'Error fetching product',
+            error: error.message 
+          });
         }
-    },
+      },
 
     deleteProduct: async (req, res) => {
         try {

@@ -20,7 +20,8 @@ const API_URL = 'http://localhost:5000/api';
 export default function ProductDetailPage() {
   
   const { id } = useParams();
-  const productId = id; 
+  const [blockchainData, setBlockchainData] = useState(null);
+  
   
   const [product, setProduct] = useState(null);
   const [history, setHistory] = useState([]);
@@ -28,10 +29,12 @@ export default function ProductDetailPage() {
   const [error, setError] = useState(null);
   const [walletConnected, setWalletConnected] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
-  const [blockchainProduct, setBlockchainProduct] = useState(null);
+  // const [blockchainProduct, setBlockchainProduct] = useState(null);
   
   useEffect(() => {
-    fetchProductDetails();
+    if (id) {
+      fetchProductDetails();
+    }
     checkWalletConnection();
   }, []);
   
@@ -68,9 +71,10 @@ export default function ProductDetailPage() {
   const fetchProductDetails = async () => {
     try {
       setLoading(true);
+      console.log(`Fetching product with ID: ${id}`);
       
       // Fetch from API
-      const response = await fetch(`${API_URL}/products/${productId}`);
+      const response = await fetch(`${API_URL}/products/${id}`);
       if (!response.ok) {
         throw new Error('Failed to fetch product details');
       }
@@ -78,26 +82,25 @@ export default function ProductDetailPage() {
       setProduct(data);
       
       // Fetch history
-      const historyResponse = await fetch(`${API_URL}/products/${productId}/history`);
+      const historyResponse = await fetch(`${API_URL}/products/${id}/history`);
       if (historyResponse.ok) {
         const historyData = await historyResponse.json();
         setHistory(historyData);
       }
       
-      // Try to fetch blockchain data if the product has a blockchain ID
-      if (data.productId) {
+      // Try to fetch blockchain data if the product has a blockchain transaction hash
+      if (data.blockchainTxHash) {
         try {
-          const onChainProduct = await getProductFromBlockchain(data.productId);
-          setBlockchainProduct(onChainProduct);
-        } catch (blockchainError) {
-          console.error("Error fetching data from blockchain:", blockchainError);
-          // Non-critical error, so we don't set the main error state
+          const blockchainProduct = await getProductFromBlockchain(data.blockchainTxHash);
+          setBlockchainData(blockchainProduct);
+        } catch (blockchainErr) {
+          console.error('Error fetching blockchain data:', blockchainErr);
         }
       }
       
     } catch (err) {
-      setError('Error loading product details. Please try again later.');
-      console.error(err);
+      console.error('Error fetching product:', err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -116,7 +119,7 @@ export default function ProductDetailPage() {
       await updateProductStatus(product.productId, newStatus);
       
       // Then update in database
-      const response = await fetch(`${API_URL}/products/${productId}/status`, {
+      const response = await fetch(`${API_URL}/products/${id}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
