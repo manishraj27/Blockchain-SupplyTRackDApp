@@ -7,11 +7,12 @@ import ProductDetailPage from "./pages/ProductDetailPage";
 
 export default function App() {
   return (
+    
     <AppLayout>
       <ProductDashboard />
       <Routes>
 
-        <Route path="/products/:id" element={<ProductDetailPage />} />
+        <Route path="/products/:id" element={<ProductDetailPage/>} />
       </Routes>
     </AppLayout>
   );

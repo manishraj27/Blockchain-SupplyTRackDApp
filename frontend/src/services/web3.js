@@ -105,17 +105,30 @@ export const getProductFromBlockchain = async (productId) => {
       throw new Error('Failed to initialize contract');
     }
     
-    const product = await contract.getProduct(productId);
-    
-    return {
-      productId: productId,
-      status: ['Created', 'InTransit', 'Delivered'][product[0]],  // status is the first return value
-      timestamp: new Date(Number(product[1]) * 1000).toISOString(), // timestamp is the second
-      exists: product[2] // exists is the third
-    };
+    // Add error handling and default values
+    try {
+      const product = await contract.getProduct(productId);
+      
+      return {
+        productId: productId,
+        status: ['Created', 'InTransit', 'Delivered'][product[0]] || 'Unknown',
+        timestamp: new Date(Number(product[1] || 0) * 1000).toISOString(),
+        exists: product[2] || false
+      };
+    } catch (error) {
+      console.error(`Error fetching product ${productId} from blockchain:`, error);
+      // Return a default object instead of throwing
+      return {
+        productId: productId,
+        status: 'Unknown',
+        timestamp: new Date().toISOString(),
+        exists: false,
+        error: error.message
+      };
+    }
   } catch (error) {
-    console.error('Error fetching product from blockchain:', error);
-    throw new Error(`Blockchain error: ${error.message}`);
+    console.error('Error connecting to blockchain:', error);
+    throw new Error(`Blockchain connection error: ${error.message}`);
   }
 };
 
