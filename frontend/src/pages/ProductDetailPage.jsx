@@ -320,7 +320,7 @@ export default function ProductDetailPage() {
                 
                 <div>
                   <h3 className="font-medium text-lg mb-4">Blockchain Verification</h3>
-                  {product.blockchainData ? (
+                  {blockchainData ? (
                     <dl className="space-y-4">
                       <div>
                         <dt className="text-sm font-medium text-gray-500">Status</dt>
@@ -330,19 +330,19 @@ export default function ProductDetailPage() {
                         </dd>
                       </div>
                       <div>
-                        <dt className="text-sm font-medium text-gray-500">Block Number</dt>
-                        <dd className="mt-1">{product.blockchainData.blockNumber}</dd>
+                        <dt className="text-sm font-medium text-gray-500">Blockchain Status</dt>
+                        <dd className="mt-1">{blockchainData.status || 'Unknown'}</dd>
                       </div>
                       <div>
                         <dt className="text-sm font-medium text-gray-500">Transaction Hash</dt>
                         <dd className="mt-1">
                           <a 
-                            href={`https://etherscan.io/tx/${product.blockchainData.txHash}`} 
+                            href={`https://etherscan.io/tx/${product.blockchainTxHash}`} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="text-blue-600 hover:underline font-mono text-sm break-all"
                           >
-                            {product.blockchainData.txHash}
+                            {product.blockchainTxHash || 'N/A'}
                           </a>
                         </dd>
                       </div>
