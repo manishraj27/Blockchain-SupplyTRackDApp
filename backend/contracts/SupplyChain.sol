@@ -2,78 +2,63 @@
 pragma solidity ^0.8.0;
 
 contract SupplyChain {
+    // Enum to represent product status
     enum Status { Created, InTransit, Delivered }
     
+    // Struct to store product data
     struct Product {
-        uint256 id;
-        string name;
-        string description;
-        address manufacturer;
+        string productId;
         Status status;
         uint256 timestamp;
         bool exists;
     }
-
-    mapping(uint256 => Product) public products;
-    uint256 public productCount;
-
-    event ProductCreated(uint256 indexed productId, string name, address manufacturer, uint256 timestamp);
-    event StatusUpdated(uint256 indexed productId, Status status, uint256 timestamp);
-
-    function createProduct(string memory _name, string memory _description) public returns (uint256) {
-        productCount++;
-        products[productCount] = Product(
-            productCount,
-            _name,
-            _description,
-            msg.sender,
-            Status.Created,
-            block.timestamp,
-            true
-        );
-        emit ProductCreated(productCount, _name, msg.sender, block.timestamp);
-        return productCount;
-    }
-
-    function updateProductStatus(uint256 _id, uint8 _status) public {
-        require(_id <= productCount, "Product does not exist");
-        require(products[_id].exists, "Product has been deleted");
-        require(_status <= 2, "Invalid status value");
+    
+    // Mapping from product ID to product data
+    mapping(string => Product) public products;
+    
+    // Events
+    event ProductCreated(string productId, uint256 timestamp);
+    event StatusUpdated(string productId, Status status, uint256 timestamp);
+    event ProductDeleted(string productId, uint256 timestamp);
+    
+    // Create a new product
+    function createProduct(string memory productId) public {
+        require(!products[productId].exists, "Product already exists");
         
-        Product storage product = products[_id];
-        product.status = Status(_status);
-        product.timestamp = block.timestamp;
+        products[productId] = Product({
+            productId: productId,
+            status: Status.Created,
+            timestamp: block.timestamp,
+            exists: true
+        });
         
-        emit StatusUpdated(_id, Status(_status), block.timestamp);
+        emit ProductCreated(productId, block.timestamp);
     }
     
-    function getProduct(uint256 _id) public view returns (
-        uint256 id,
-        string memory name,
-        string memory description,
-        address manufacturer,
-        uint8 status,
-        uint256 timestamp,
-        bool exists
-    ) {
-        require(_id <= productCount, "Product does not exist");
-        Product storage product = products[_id];
+    // Update product status
+    function updateProductStatus(string memory productId, Status newStatus) public {
+        require(products[productId].exists, "Product does not exist");
+        require(newStatus <= Status.Delivered, "Invalid status value");
         
-        return (
-            product.id,
-            product.name,
-            product.description,
-            product.manufacturer,
-            uint8(product.status),
-            product.timestamp,
-            product.exists
-        );
+        // Update status
+        products[productId].status = newStatus;
+        products[productId].timestamp = block.timestamp;
+        
+        emit StatusUpdated(productId, newStatus, block.timestamp);
     }
     
-    function deleteProduct(uint256 _id) public {
-        require(_id <= productCount, "Product does not exist");
-        require(products[_id].exists, "Product already deleted");
+    // Delete a product
+    function deleteProduct(string memory productId) public {
+        require(products[productId].exists, "Product does not exist");
         
-        products[_id].exists = false;
+        delete products[productId];
+        
+        emit ProductDeleted(productId, block.timestamp);
+    }
+    
+    // Get product details
+    function getProduct(string memory productId) public view returns (Status status, uint256 timestamp, bool exists) {
+        Product memory product = products[productId];
+        return (product.status, product.timestamp, product.exists);
     }
 }

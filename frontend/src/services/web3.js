@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 import SupplyChainABI from '../contracts/SupplyChain.json';
 
-const CONTRACT_ADDRESS = '0x69cCd8f309752975fE801e9EaCC2cB3b21659CB2';
+const CONTRACT_ADDRESS = '0x2E218bEb8216D790A6B73618Da6193b53D99e83F';
 
 export const getWeb3Provider = async () => {
   if (typeof window.ethereum === 'undefined') {
@@ -32,13 +32,14 @@ export const createProduct = async (productData) => {
     const contract = await getContract();
     if (!contract) throw new Error('Contract connection failed');
     
-    console.log('Creating product with:', productData.name, productData.description);
+    // Generate a unique product ID - using MongoDB ObjectId format
+    // This will be stored in both blockchain and database to link them
+    const productId = generateUniqueId();
     
-    // Call the contract function
-    const tx = await contract.createProduct(
-      productData.name,
-      productData.description
-    );
+    console.log('Creating product with ID:', productId);
+    
+    // Call the contract function with only the productId parameter
+    const tx = await contract.createProduct(productId);
     
     console.log('Transaction submitted:', tx.hash);
     
@@ -46,22 +47,30 @@ export const createProduct = async (productData) => {
     const receipt = await tx.wait();
     console.log('Transaction mined:', receipt);
     
-    // Just return transaction details without product ID
+    // Return transaction details and the product ID
     return { 
       success: true, 
       txHash: receipt.hash,
-      blockNumber: receipt.blockNumber
+      blockNumber: receipt.blockNumber,
+      productId: productId // Include the generated ID
     };
   } catch (error) {
     console.error('Error creating product on blockchain:', error);
     throw new Error(`Blockchain transaction failed: ${error.message}`);
   }
 };
+
 // Helper function to update product status via the smart contract
-export const updateProductStatus = async (productId, newStatus) => {
+export const updateProductStatus = async (product, newStatus) => {
   try {
     const contract = await getContract();
     if (!contract) throw new Error('Contract connection failed');
+    
+    // We need the blockchain product ID, not the MongoDB _id
+    const productId = product.productId;
+    if (!productId) {
+      throw new Error('Product does not have a blockchain ID');
+    }
     
     // Convert status string to number used in the contract
     const statusMap = {
@@ -89,34 +98,31 @@ export const updateProductStatus = async (productId, newStatus) => {
 };
 
 // Helper function to get product details from the smart contract
-// Helper function to get product details from the smart contract using tx hash
-export const getProductFromBlockchain = async (blockchainTxHash) => {
+export const getProductFromBlockchain = async (productId) => {
   try {
     const contract = await getContract();
     if (!contract) {
       throw new Error('Failed to initialize contract');
     }
     
-    // If your contract doesn't have a way to look up by tx hash,
-    // you might need to store the product ID in your MongoDB document
-    // For now we'll assume we're using the numeric ID from the contract
-    
-    // Extract the product ID from your database or parse from transaction receipt
-    const numericId = parseInt(blockchainTxHash, 16) % 1000000; // Just an example - replace with your logic
-    
-    const product = await contract.getProduct(numericId);
+    const product = await contract.getProduct(productId);
     
     return {
-      id: product.id.toString(),
-      name: product.name,
-      description: product.description,
-      manufacturer: product.manufacturer,
-      status: ['Created', 'InTransit', 'Delivered'][product.status],
-      timestamp: new Date(Number(product.timestamp) * 1000).toISOString(),
-      exists: product.exists
+      productId: productId,
+      status: ['Created', 'InTransit', 'Delivered'][product[0]],  // status is the first return value
+      timestamp: new Date(Number(product[1]) * 1000).toISOString(), // timestamp is the second
+      exists: product[2] // exists is the third
     };
   } catch (error) {
     console.error('Error fetching product from blockchain:', error);
     throw new Error(`Blockchain error: ${error.message}`);
   }
 };
+
+// Generate a unique ID similar to MongoDB ObjectId format
+function generateUniqueId() {
+  const timestamp = Math.floor(Date.now() / 1000).toString(16).padStart(8, '0');
+  const randomPart = Math.random().toString(16).substring(2, 14).padStart(12, '0');
+  const counter = Math.floor(Math.random() * 16777216).toString(16).padStart(6, '0');
+  return timestamp + randomPart + counter;
+}

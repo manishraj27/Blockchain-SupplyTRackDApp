@@ -124,15 +124,12 @@ export default function ProductDashboard() {
       setIsCreating(true);
       setTxStatus("Creating product on blockchain...");
       
-      // Step 1: Create product on blockchain
-      const blockchainResult = await createProduct({
-        name: values.name,
-        description: values.description
-      });
+      // Step 1: Create product on blockchain - this now returns a product ID
+      const blockchainResult = await createProduct();
       
       setTxStatus("Transaction confirmed on blockchain! Saving to database...");
       
-      // Step 2: Save product in database with blockchain transaction details
+      // Step 2: Save product in database with blockchain transaction details and product ID
       const response = await fetch(`${API_URL}/products`, {
         method: 'POST',
         headers: {
@@ -142,8 +139,8 @@ export default function ProductDashboard() {
           name: values.name,
           description: values.description,
           manufacturer: values.manufacturer,
-          // Use a placeholder value or omit blockchainId
-          blockchainId: Math.floor(Math.random() * 10000), // Temporary mock ID
+          // Use the product ID generated in the blockchain transaction
+          productId: blockchainResult.productId,
           blockchainTxHash: blockchainResult.txHash
         }),
       });
@@ -176,18 +173,33 @@ export default function ProductDashboard() {
       setIsCreating(false);
     }
   };
-  const handleUpdateStatus = async (productId, newStatus) => {
+
+
+  const handleUpdateStatus = async (product, newStatus) => {
     if (!walletConnected) {
       setError("Please connect your wallet first");
       return;
     }
     
     try {
-      // First update on blockchain
-      await updateProductStatus(productId, newStatus);
+      // If product is already the full object, use it directly
+      const productToUpdate = typeof product === 'string' 
+        ? products.find(p => p._id === product)  // If ID was passed
+        : product;                              // If full product object was passed
       
-      // Then update in database
-      const response = await fetch(`${API_URL}/products/${productId}/status`, {
+      if (!productToUpdate) {
+        throw new Error('Product not found');
+      }
+      
+      if (!productToUpdate.productId) {
+        throw new Error('Product does not have a blockchain ID');
+      }
+      
+      // First update on blockchain - pass the full product object
+      await updateProductStatus(productToUpdate, newStatus);
+      
+      // Then update in database using MongoDB ID
+      const response = await fetch(`${API_URL}/products/${productToUpdate._id}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -201,10 +213,10 @@ export default function ProductDashboard() {
       
       // Update the local state
       setProducts(prev => 
-        prev.map(product => 
-          product._id === productId 
-            ? { ...product, status: newStatus } 
-            : product
+        prev.map(p => 
+          p._id === productToUpdate._id 
+            ? { ...p, status: newStatus } 
+            : p
         )
       );
       
@@ -444,7 +456,7 @@ export default function ProductDashboard() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem 
                               disabled={product.status === 'Created' || !walletConnected}
-                              onClick={() => handleUpdateStatus(product._id, 'Created')}
+                              onClick={() => handleUpdateStatus(product, 'Created')}
                               className="cursor-pointer"
                             >
                               <Package className="mr-2 h-4 w-4" />
@@ -452,7 +464,7 @@ export default function ProductDashboard() {
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               disabled={product.status === 'InTransit' || !walletConnected}
-                              onClick={() => handleUpdateStatus(product._id, 'InTransit')}
+                              onClick={() => handleUpdateStatus(product, 'InTransit')}
                               className="cursor-pointer"
                             >
                               <Truck className="mr-2 h-4 w-4" />
@@ -460,7 +472,7 @@ export default function ProductDashboard() {
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               disabled={product.status === 'Delivered' || !walletConnected}
-                              onClick={() => handleUpdateStatus(product._id, 'Delivered')}
+                              onClick={() => handleUpdateStatus(product, 'Delivered')}
                               className="cursor-pointer"
                             >
                               <Check className="mr-2 h-4 w-4" />
