@@ -70,6 +70,7 @@ const productController = {
                 description: product.description,
                 status: product.status,
                 blockchainTxHash: product.blockchainTxHash,
+                productId: product.productId,
                 manufacturer: product.manufacturer,
                 createdAt: product.createdAt,
                 updatedAt: product.updatedAt,

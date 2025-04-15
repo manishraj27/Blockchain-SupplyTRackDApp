@@ -416,7 +416,7 @@ export default function ProductDashboard() {
                       <div className="flex items-center">
                         <div>
                           <div className="font-medium text-gray-900">{product.name}</div>
-                          <div className="text-sm text-gray-500">{product.productId ? product.productId.substring(0, 10) + '...' : 'N/A'}</div>
+                          <div className="text-sm text-gray-500">{product.productId}</div>
                         </div>
                       </div>
                     </td>
@@ -425,7 +425,7 @@ export default function ProductDashboard() {
                       {getStatusBadge(product.status)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {product.blockchainData ? (
+                      {product.productId ? (
                         <div className="flex items-center">
                           <div className="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
                           <span className="text-sm text-green-700">Verified</span>
