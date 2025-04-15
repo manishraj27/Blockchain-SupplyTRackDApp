@@ -10,7 +10,7 @@ export default function App() {
     <AppLayout>
       <ProductDashboard />
       <Routes>
-        <Route path="/" element={<ProductDashboard />} />
+
         <Route path="/products/:id" element={<ProductDetailPage />} />
       </Routes>
     </AppLayout>
