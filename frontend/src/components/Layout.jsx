@@ -100,7 +100,7 @@ function Layout({ children }) {
       {/* Main content */}
       <div 
         className={cn(
-          "flex-1 transition-all duration-300 ease-in-out",
+          "flex-1 transition-all duration-300 ease-in-out bg-white",
           sidebarOpen ? "lg:ml-64" : "ml-0"
         )}
       >
