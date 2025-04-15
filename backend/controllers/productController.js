@@ -7,7 +7,7 @@ const productController = {
             console.log('Received product data:', req.body);
             
             // Check if blockchain transaction was already performed
-            if (!req.body.blockchainId || !req.body.blockchainTxHash) {
+            if (!req.body.blockchainTxHash) {
                 return res.status(400).json({ 
                     message: 'Missing blockchain transaction details'
                 });
@@ -18,7 +18,6 @@ const productController = {
                 name: req.body.name,
                 description: req.body.description,
                 status: 'Created',
-                blockchainId: req.body.blockchainId,
                 blockchainTxHash: req.body.blockchainTxHash,
                 manufacturer: req.body.manufacturer
             });

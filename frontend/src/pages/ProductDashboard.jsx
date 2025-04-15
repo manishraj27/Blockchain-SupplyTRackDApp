@@ -38,10 +38,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { createProduct, updateProductStatus } from '../services/web3';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
 
 const API_URL = 'http://localhost:5000/api';
 
 export default function ProductDashboard() {
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -428,7 +430,7 @@ export default function ProductDashboard() {
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          onClick={() => window.location.href = `/products/${product._id}`}
+                          onClick={() => navigate(`/products/${product._id}`)}
                         >
                           View
                         </Button>

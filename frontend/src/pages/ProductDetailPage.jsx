@@ -12,13 +12,15 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { updateProductStatus, getProductFromBlockchain } from '../services/web3';
+import { useParams } from 'react-router-dom';
 
 // Mock API URL - replace with actual API URL in production
 const API_URL = 'http://localhost:5000/api';
 
 export default function ProductDetailPage() {
-  // In a real app, you would get this from URL params using React Router
-  const productId = "60f1a5b2e754e62b3c9d1234"; 
+  
+  const { id } = useParams();
+  const productId = id; 
   
   const [product, setProduct] = useState(null);
   const [history, setHistory] = useState([]);
